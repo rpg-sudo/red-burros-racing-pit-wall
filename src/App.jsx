@@ -210,13 +210,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 sm:p-8 flex flex-col">
       <header className="max-w-6xl w-full mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 mb-8 bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-xl font-black tracking-tight uppercase">RED BURROS RACING</h1>
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-500' : syncStatus === 'offline' || syncStatus === 'error' ? 'bg-red-500' : 'bg-blue-500 animate-pulse'}`} />
-              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{syncStatus}</span>
-            </div>
+        <div className="flex flex-col justify-center">
+          <h1 className="text-xl font-black tracking-tight uppercase">RED BURROS RACING</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <div className={`w-2 h-2 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-500' : syncStatus === 'offline' || syncStatus === 'error' ? 'bg-red-500' : 'bg-blue-500 animate-pulse'}`} />
+            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{syncStatus}</span>
           </div>
         </div>
         <div className="flex flex-col items-end font-mono">
