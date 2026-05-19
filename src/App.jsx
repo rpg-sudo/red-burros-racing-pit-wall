@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Timer, Settings, Activity, Cloud, Play, Square, 
-  CheckCircle, ListOrdered, Wand2, AlertTriangle, 
-  Fuel, ClipboardList, Flag, X, RefreshCw, Clock
-} from 'lucide-react';
 
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
-// Safely initialize Firebase so that invalid keys don't crash the entire app (preventing the black screen)
+// Safely initialize Firebase so that invalid keys don't crash the app
 let app, auth, db;
-const activeAppId = typeof __app_id !== 'undefined' ? __app_id : "red-burros-endurance-2024";
+const rawAppId = typeof __app_id !== 'undefined' ? __app_id : "red-burros-endurance-2024";
+// Sanitize the app ID to ensure it is a valid single segment for Firestore paths
+const safeAppId = rawAppId.replace(/[^a-zA-Z0-9_-]/g, '-');
 
 try {
   const firebaseConfig = typeof __firebase_config !== 'undefined' 
@@ -32,6 +29,19 @@ try {
 } catch (err) {
   console.error("Firebase Initialization Error:", err);
 }
+
+// Inline SVGs to prevent React Component rendering crashes from external libraries
+const PlayIcon = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polygon points="5 3 19 12 5 21 5 3" />
+  </svg>
+);
+
+const ActivityIcon = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
+);
 
 const formatTime = (s) => {
   if (isNaN(s) || s < 0) return '00:00';
@@ -74,7 +84,8 @@ export default function App() {
       return;
     }
     try {
-      await setDoc(doc(db, 'artifacts', activeAppId, 'public', 'data', 'race', 'state'), {
+      const docRef = doc(db, 'artifacts', safeAppId, 'public', 'data', 'race', 'state');
+      await setDoc(docRef, {
         ...stateRef.current, 
         ...overrides, 
         updatedBy: clientId, 
@@ -82,7 +93,7 @@ export default function App() {
       });
       setSyncStatus('synced');
     } catch (e) { 
-      console.error(e);
+      console.error("Push State Error:", e);
       setSyncStatus('error'); 
     }
   };
@@ -115,34 +126,41 @@ export default function App() {
     if (!user || !db) return;
     setSyncStatus('connecting');
     
-    return onSnapshot(
-      doc(db, 'artifacts', activeAppId, 'public', 'data', 'race', 'state'), 
-      (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.updatedBy !== clientId) {
-            setIsRunning(data.isRunning);
-            setCompletedPitStops(data.completedPitStops);
-            setCurrentDriver(data.currentDriver);
-            setDriverSchedule(data.driverSchedule || []);
-            setTrackStatus(data.trackStatus);
-            setTrackWeather(data.trackWeather);
-            setRaceLogs(data.raceLogs || []);
-            const passed = data.isRunning ? Math.floor((Date.now() - data.lastSync) / 1000) : 0;
-            setRaceTimeLeft(Math.max(0, data.raceTimeLeft - passed));
-            setFuelTimeLeft(Math.max(0, data.fuelTimeLeft - passed));
-            setActiveStintTime(data.activeStintTime + passed);
-            setSyncStatus('synced');
+    try {
+      const docRef = doc(db, 'artifacts', safeAppId, 'public', 'data', 'race', 'state');
+      const unsubscribe = onSnapshot(
+        docRef, 
+        (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.updatedBy !== clientId) {
+              setIsRunning(data.isRunning);
+              setCompletedPitStops(data.completedPitStops);
+              setCurrentDriver(data.currentDriver);
+              setDriverSchedule(data.driverSchedule || []);
+              setTrackStatus(data.trackStatus);
+              setTrackWeather(data.trackWeather);
+              setRaceLogs(data.raceLogs || []);
+              const passed = data.isRunning ? Math.floor((Date.now() - data.lastSync) / 1000) : 0;
+              setRaceTimeLeft(Math.max(0, data.raceTimeLeft - passed));
+              setFuelTimeLeft(Math.max(0, data.fuelTimeLeft - passed));
+              setActiveStintTime(data.activeStintTime + passed);
+              setSyncStatus('synced');
+            }
+          } else { 
+            pushState(); 
           }
-        } else { 
-          pushState(); 
+        }, 
+        (error) => {
+          console.error("Snapshot Error:", error);
+          setSyncStatus('error');
         }
-      }, 
-      (error) => {
-        console.error("Snapshot Error:", error);
-        setSyncStatus('error');
-      }
-    );
+      );
+      return () => unsubscribe();
+    } catch (e) {
+      console.error("Firestore listener setup error:", e);
+      setSyncStatus('error');
+    }
   }, [user]);
 
   useEffect(() => {
@@ -193,9 +211,6 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 sm:p-8 flex flex-col">
       <header className="max-w-6xl w-full mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 mb-8 bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl">
         <div className="flex items-center gap-4">
-          <div className="bg-white p-2 rounded-xl">
-            <img src="https://i.ibb.co/LdqF6g6/logo-Red-Burros-back-white.png" alt="Logo" className="h-10" />
-          </div>
           <div>
             <h1 className="text-xl font-black tracking-tight uppercase">RED BURROS RACING</h1>
             <div className="flex items-center gap-2">
@@ -247,9 +262,9 @@ export default function App() {
              </div>
              <div className="mt-12 flex gap-4 w-full">
                 {!isRunning ? (
-                  <button onClick={() => { setIsRunning(true); pushState({isRunning: true}); }} className="flex-1 py-5 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95"><Play className="fill-current w-5 h-5" /> Start Race</button>
+                  <button onClick={() => { setIsRunning(true); pushState({isRunning: true}); }} className="flex-1 py-5 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95"><PlayIcon className="w-5 h-5" /> Start Race</button>
                 ) : (
-                  <div className="flex-1 py-5 bg-slate-950 border border-emerald-500/30 text-emerald-500 rounded-2xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-3 shadow-inner animate-pulse"><Activity className="w-5 h-5" /> Race Active</div>
+                  <div className="flex-1 py-5 bg-slate-950 border border-emerald-500/30 text-emerald-500 rounded-2xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-3 shadow-inner animate-pulse"><ActivityIcon className="w-5 h-5" /> Race Active</div>
                 )}
                 <button onClick={() => { if(window.confirm('Reset Race?')) { window.location.reload(); } }} className="px-10 py-5 bg-slate-800 hover:bg-red-900/40 hover:text-red-400 rounded-2xl font-black uppercase text-xs border border-slate-700">Reset</button>
              </div>
