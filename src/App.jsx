@@ -6,23 +6,32 @@ import {
 } from 'lucide-react';
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyApqapbww90SRKwLRh-uXg9hiEwuRncTDQ",
-  authDomain: "red-burros-racing-pit-wall.firebaseapp.com",
-  projectId: "red-burros-racing-pit-wall",
-  storageBucket: "red-burros-racing-pit-wall.firebasestorage.app",
-  messagingSenderId: "933403633091",
-  appId: "1:933403633091:web:13eb28ba3e25985a888976",
-  measurementId: "G-9RVFXHFPH1"
-};
+// Safely initialize Firebase so that invalid keys don't crash the entire app (preventing the black screen)
+let app, auth, db;
+const activeAppId = typeof __app_id !== 'undefined' ? __app_id : "red-burros-endurance-2024";
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const activeAppId = "red-burros-endurance-2024";
+try {
+  const firebaseConfig = typeof __firebase_config !== 'undefined' 
+    ? JSON.parse(__firebase_config) 
+    : {
+        apiKey: "AIzaSyApqapbww90SRKwLRh-uXg9hiEwuRncTDQ",
+        authDomain: "red-burros-racing-pit-wall.firebaseapp.com",
+        projectId: "red-burros-racing-pit-wall",
+        storageBucket: "red-burros-racing-pit-wall.firebasestorage.app",
+        messagingSenderId: "933403633091",
+        appId: "1:933403633091:web:13eb28ba3e25985a888976",
+        measurementId: "G-9RVFXHFPH1"
+      };
+
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+} catch (err) {
+  console.error("Firebase Initialization Error:", err);
+}
 
 const formatTime = (s) => {
   if (isNaN(s) || s < 0) return '00:00';
@@ -60,7 +69,10 @@ export default function App() {
   };
 
   const pushState = async (overrides = {}) => {
-    if (!user || !db) return;
+    if (!user || !db) {
+      setSyncStatus('offline');
+      return;
+    }
     try {
       await setDoc(doc(db, 'artifacts', activeAppId, 'public', 'data', 'race', 'state'), {
         ...stateRef.current, 
@@ -76,14 +88,24 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (!auth) {
+      setSyncStatus('offline');
+      return;
+    }
+
     const initAuth = async () => {
       try {
-        await signInAnonymously(auth);
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
       } catch (error) {
         console.error("Auth Error:", error);
         setSyncStatus('error');
       }
     };
+    
     initAuth();
     const unsubscribe = onAuthStateChanged(auth, setUser);
     return () => unsubscribe();
@@ -146,12 +168,16 @@ export default function App() {
       driverSchedule: driverSchedule.length > 0 ? driverSchedule.slice(1) : [],
       raceLogs: [log, ...raceLogs]
     };
+    
+    // Updates UI locally instantly
     setCompletedPitStops(newState.completedPitStops);
     setFuelTimeLeft(newState.fuelTimeLeft);
     setActiveStintTime(0);
     setCurrentDriver(newState.currentDriver);
     setDriverSchedule(newState.driverSchedule);
     setRaceLogs(newState.raceLogs);
+    
+    // Pushes to cloud if available
     pushState(newState);
   };
 
@@ -173,7 +199,7 @@ export default function App() {
           <div>
             <h1 className="text-xl font-black tracking-tight uppercase">RED BURROS RACING</h1>
             <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-500' : 'bg-blue-500 animate-pulse'}`} />
+              <div className={`w-2 h-2 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-500' : syncStatus === 'offline' || syncStatus === 'error' ? 'bg-red-500' : 'bg-blue-500 animate-pulse'}`} />
               <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{syncStatus}</span>
             </div>
           </div>
