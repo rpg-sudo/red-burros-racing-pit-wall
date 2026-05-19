@@ -3,61 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analytics Dashboard</title>
+    <title>Karting Pit Wall</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0f172a; color: #f1f5f9; }
-        .sidebar-bg { background-color: #1e293b; }
-        .card-bg { background-color: #1e293b; border-color: #334155; }
+        body { background-color: #050505; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .pit-card { background-color: #111; border: 1px solid #222; }
+        .text-neon { color: #00ffcc; }
     </style>
 </head>
-<body class="min-h-screen flex">
+<body class="p-6">
 
-    <!-- Sidebar -->
-    <aside class="sidebar-bg w-64 p-6 hidden md:flex flex-col border-r border-slate-700">
-        <div class="text-xl font-bold mb-10">Dashboard</div>
-        <nav class="space-y-4">
-            <a href="#" class="block text-indigo-400">Overview</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Analytics</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Reports</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Settings</a>
-        </nav>
-    </aside>
+    <!-- Header Section -->
+    <header class="mb-8 border-b border-gray-800 pb-6 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-black tracking-tighter uppercase">Red Burros Racing</h1>
+            <p class="text-gray-500 text-sm mt-1 uppercase tracking-widest">Endurance Telemetry Monitor</p>
+        </div>
+        <div class="text-right">
+            <span class="block text-gray-500 text-[10px] uppercase font-bold">Race Status</span>
+            <span class="text-green-500 font-black tracking-widest">ON TRACK - GREEN</span>
+        </div>
+    </header>
 
-    <!-- Main Content -->
-    <main class="flex-1 p-8">
-        <header class="mb-8">
-            <h1 class="text-2xl font-semibold">Dashboard Overview</h1>
-        </header>
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <!-- Timing & Telemetry Column -->
+        <div class="lg:col-span-3 space-y-6">
+            <div class="pit-card p-8 rounded-2xl border-l-4 border-l-neon">
+                <h2 class="text-gray-400 text-xs uppercase font-bold mb-2">Race Time Remaining</h2>
+                <div class="text-7xl font-mono font-black text-white">23:42:15</div>
+            </div>
 
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="card-bg p-6 rounded-xl border">
-                <p class="text-slate-400 text-sm">Total Revenue</p>
-                <div class="text-2xl font-bold mt-1">$128,430</div>
-            </div>
-            <div class="card-bg p-6 rounded-xl border">
-                <p class="text-slate-400 text-sm">Active Users</p>
-                <div class="text-2xl font-bold mt-1">42,912</div>
-            </div>
-            <div class="card-bg p-6 rounded-xl border">
-                <p class="text-slate-400 text-sm">Bounce Rate</p>
-                <div class="text-2xl font-bold mt-1">24.5%</div>
-            </div>
-            <div class="card-bg p-6 rounded-xl border">
-                <p class="text-slate-400 text-sm">Avg Session</p>
-                <div class="text-2xl font-bold mt-1">4m 32s</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="pit-card p-6 rounded-2xl">
+                    <h2 class="text-gray-400 text-xs uppercase font-bold mb-2">Current Driver</h2>
+                    <div class="text-2xl font-bold">Ricardo Guedes</div>
+                    <div class="text-neon text-sm mt-1">Stint: 42m 12s</div>
+                </div>
+                <div class="pit-card p-6 rounded-2xl">
+                    <h2 class="text-gray-400 text-xs uppercase font-bold mb-2">Fuel Level</h2>
+                    <div class="text-2xl font-bold">84%</div>
+                    <div class="w-full bg-gray-800 h-2 mt-2 rounded-full overflow-hidden">
+                        <div class="bg-neon h-full w-[84%]"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Main Chart/Data Area -->
-        <div class="card-bg p-8 rounded-xl border min-h-[400px] flex flex-col justify-center items-center">
-            <p class="text-slate-500 mb-2">Data visualization area</p>
-            <div class="w-full h-48 border-2 border-dashed border-slate-700 rounded-lg flex items-center justify-center">
-                <span class="text-slate-600">Placeholder for primary metric chart</span>
+        <!-- Driver Rotation Column -->
+        <div class="pit-card p-6 rounded-2xl">
+            <h2 class="text-gray-400 text-xs uppercase font-bold mb-6">Driver Rotation</h2>
+            <div class="space-y-4">
+                <div class="flex items-center gap-3 bg-gray-900 p-3 rounded-lg border border-gray-800">
+                    <div class="w-2 h-2 rounded-full bg-neon"></div>
+                    <span class="font-medium text-white">Ricardo Guedes</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 text-gray-500">
+                    <div class="w-2 h-2 rounded-full bg-gray-700"></div>
+                    <span>Abel Santos</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 text-gray-500">
+                    <div class="w-2 h-2 rounded-full bg-gray-700"></div>
+                    <span>Joao Pinto</span>
+                </div>
             </div>
         </div>
-    </main>
+    </div>
 
 </body>
 </html>
